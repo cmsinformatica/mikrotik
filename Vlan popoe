@@ -1,0 +1,36 @@
+
+/interface bridge
+add arp=proxy-arp name=bridge_pppoe protocol-mode=none
+
+/interface vlan
+add interface=ether2 name=vlan7_ether2 vlan-id=7
+add interface=ether3 name=vlan7_ether3 vlan-id=7
+add interface=ether4 name=vlan7_ether4 vlan-id=7
+add interface=ether5 name=vlan7_ether5 vlan-id=7
+
+/ip pool
+add name=pppoe-pool ranges=192.168.200.2-192.168.200.254
+
+/ppp profile
+add local-address=192.168.200.1 name=pppoe-profile remote-address=pppoe-pool
+
+/interface bridge port
+add bridge=bridge_pppoe interface=vlan7_ether2
+add bridge=bridge_pppoe interface=vlan7_ether3
+add bridge=bridge_pppoe interface=vlan7_ether4
+add bridge=bridge_pppoe interface=vlan7_ether5
+
+/interface pppoe-server server
+add authentication=pap default-profile=pppoe-profile disabled=no interface=\
+    bridge_pppoe one-session-per-host=yes service-name=TestPPPoE
+
+/ip firewall nat
+add action=masquerade chain=srcnat out-interface-list=WAN src-address=\
+    192.168.200.0/24
+
+/ip firewall filter
+add chain=input action=accept src-address=192.168.200.0/24 protocol=tcp dst-port=53 place-before=5
+add chain=input action=accept src-address=192.168.200.0/24 protocol=udp dst-port=53 place-before=5
+
+/ppp secret
+add name=testuser password=test profile=pppoe-profile service=pppoe
